@@ -1,0 +1,24 @@
+,,,,,,
+,,,,,,
+,,,,,,
+,NIC,GPIO,Wire,,GPIO,NIC
+,VCC,3.3 VDC,1,2,5.0 VDC,5V
+,n/a,GPIO 8,3,4,5.0 VDC,n/a
+,n/a,GPIO 9,5,6,Ground,Ground
+,n/a,GPIO 7,7,8,GPIO 15,n/a
+,n/a,Ground,9,10,GPIO 16,n/a
+,n/a,GPIO 0,11,12,GPIO 1 ,n/a
+,Port 1 Tx,GPIO 2,13,14,Ground,n/a
+,Port 3 Rx,GPIO 3,15,16,GPIO 4,Port 3 Tx
+,n/a,3.3 VDC,17,18,GPIO5,Port 2 Rx
+,n/a,GPIO 12,19,20,Ground,n/a
+,n/a,GPIO 13,21,22,GPIO 6 ,Port 2 Tx
+,n/a,GPIO 14,23,24,GPIO 10,n/a
+,n/a,Ground,25,26,GPIO 11,n/a
+,n/a,SDA0,27,28,SCL0,n/a
+,n/a,GPIO 21,29,30,Ground,n/a
+,n/a,GPIO 22,31,32,GPIO 26,n/a
+,n/a,GPIO 23,33,34,Ground,n/a
+,n/a,GPIO 24,35,36,GPIO 27,n/a
+,Port 1 Rx,GPIO 25,37,38,GPIO 28,Port 4 Rx
+,n/a,Ground,39,40,GPIO 29,Port 4 Tx
