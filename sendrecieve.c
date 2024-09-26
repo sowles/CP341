@@ -4,14 +4,17 @@
 #include <time.h>
 #include <stdbool.h>
 
-//clock_t startTime = 0;
-//clock_t totalTime = 0;
+
+uint32_t startTime = 0;
+uint32_t calc_t = 0;
+uint32_t tickOfLastBit;
 bool oneSent;
-bool stopwatchStarted = false;
-bool correctTime = false;
-int DELTA_T = 1;
+bool firstTwoBits = true;
+#define DELTA_T 1000
 
 int main(){
+	int SEND_MODE = 0;
+	int RECIEVE_MODE = 1;
 	//KNOWN PINS
 	//Port 1 tx: 27
 	//Port 1 rx: 26
@@ -44,45 +47,42 @@ int main(){
 		printf("%d", recieved[i]);
 	}
 	*/
+	gpio_write(pi,27,0);	
+	gpio_write(pi,25,0);	
+	gpio_write(pi,23,0);	
+	gpio_write(pi,21,0);	
+	
 
-	recieveHandshake(pi);
+	// set mode here
+	int mode = RECIEVE_MODE;
+	if (mode == SEND_MODE){
+		send_info(pi,1);
+	}
+	else{
+		recieveHandshake(pi);
+	}
 
 	pigpio_stop(pi);		
 	//free(sending);
 	//free(recieved);
 	return 0;
 }
-/**
-int sendHandshake(int pi){
-	int primaryState = gpio_read(pi, 20);	
-	int currentState = primaryState;
-
-	printf("primary: %d\n", primaryState);
-
-	//Wait for the reception
-	clock_t starttime = clock();
-	while(currentState == primaryState){
-		int toggle = gpio_write(pi,27,0);
-		sleep(1);
-		toggle = gpio_write(pi,27,1);
-		currentState = gpio_read(pi,20);
-		clock_t endtime = clock();
-		if((endtime-starttime)/CLOCKS_PER_SEC > 5){
-			printf("Handshake failed");
-			return 1;
-		}
-	}
+int send_info(int pi, int bit){	
+	int half_rate = DELTA_T/2;
+	gpio_write(pi,27,bit);
+	usleep(DELTA_T);	
+	if(bit == 1){
+		
+		gpio_write(pi,27,0);
+		usleep(DELTA_T);	
+	}else{
 	
-	int test = gpio_read(pi, 20);
-	printf("End: %d\n", test);
-	printf("Handshake successfully sent");
+		gpio_write(pi,27,1);
+		usleep(DELTA_T);	
+	}
 
 }
-*/
-int testSend(pi){
-	gpio_write(pi,27,1);
-	gpio_write(pi,27,0);
-}
+
 void callBackfunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 	printf("Success\n");
 	gpio_write(pi, 27, 0);
@@ -90,23 +90,39 @@ void callBackfunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 }
 
 void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
-	printf("1 sent\n");
+//	printf("1 sent\n");
+	tickOfLastBit = tick;
 	oneSent = true;
-	if (correctTime){
-		printf("1\n");
+	startTime = tick;
+	
+	if(withinBuffer(tick)){
+		tickOfLastBit = tick;
+		printf("correct 1\n");	
 	}
+
+	//printf("falling edge\n");
 	//printf("falling edge\n");
 }
 
 void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
-	printf("0 sent\n");
-	if (oneSent){
-		stopwatchStarted = true;
+//	printf("0 sent\n");
+	if (oneSent && firstTwoBits){
+		calc_t = (tick-startTime);
+		firstTwoBits = false;
 	}
-	if (correctTime){
-		printf("0\n");
+	if(withinBuffer(tick)){
+		tickOfLastBit = tick;
+		printf("correct 0\n");	
 	}
-	//printf("rising edge\n");
+}
+
+int withinBuffer(uint32_t tick){
+	//30 is the buffer we set
+	if((tick < tickOfLastBit+30) && (tick > tickOfLastBit-30)){
+		return 1;
+	}else{
+		return 0;
+	}
 }
 
 int recieveHandshake(int pi){
@@ -114,27 +130,10 @@ int recieveHandshake(int pi){
 	//int primaryState = gpio_read(pi, 20);
 	//int currentState = primaryState;
 	//printf("primary: %d\n", primaryState);
-	
 	int callbackFall = callback(pi,20,FALLING_EDGE,fallingFunc);
 	int callbackRise = callback(pi,20,RISING_EDGE,risingFunc);
 	
-	
-	while (!stopwatchStarted){
-		
-	}
-
-	// start stopwatch
-	clock_t starttime = clock();
 	while(1){	
-		clock_t currentTime = clock();
-		
-		if((currentTime-starttime)/CLOCKS_PER_SEC == DELTA_T){
-			correctTime = true;
-		}
-		else{
-			correctTime = false;	
-		}
-		
 
 	}
 /*
