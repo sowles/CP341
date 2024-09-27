@@ -5,12 +5,10 @@
 #include <stdbool.h>
 
 
-uint32_t startTime = 0;
-uint32_t calc_t = 0;
-uint32_t tickOfLastBit;
-bool oneSent;
-bool firstTwoBits = true;
-#define DELTA_T 1000
+uint32_t startTick = 0;
+uint32_t STARTTEST = 0;
+int count = 0;
+#define DELTA_T 10000
 
 int main(){
 	int SEND_MODE = 0;
@@ -47,16 +45,21 @@ int main(){
 		printf("%d", recieved[i]);
 	}
 	*/
-	gpio_write(pi,27,0);	
-	gpio_write(pi,25,0);	
-	gpio_write(pi,23,0);	
-	gpio_write(pi,21,0);	
-	
 
 	// set mode here
 	int mode = RECIEVE_MODE;
 	if (mode == SEND_MODE){
+		//header
+		gpio_write(pi,27,1);
+		usleep(DELTA_T);
+		//data
 		send_info(pi,1);
+		send_info(pi,1);
+		send_info(pi,0);
+		send_info(pi,1);
+		//trailer
+		gpio_write(pi,27,0);
+		usleep(DELTA_T);
 	}
 	else{
 		recieveHandshake(pi);
@@ -83,57 +86,63 @@ int send_info(int pi, int bit){
 
 }
 
-void callBackfunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
-	printf("Success\n");
-	gpio_write(pi, 27, 0);
-	gpio_write(pi,27,1);
-}
-
-void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
-//	printf("1 sent\n");
-	tickOfLastBit = tick;
-	oneSent = true;
-	startTime = tick;
-	
-	if(withinBuffer(tick)){
-		tickOfLastBit = tick;
-		printf("correct 1\n");	
-	}
-
-	//printf("falling edge\n");
-	//printf("falling edge\n");
-}
-
-void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
-//	printf("0 sent\n");
-	if (oneSent && firstTwoBits){
-		calc_t = (tick-startTime);
-		firstTwoBits = false;
-	}
-	if(withinBuffer(tick)){
-		tickOfLastBit = tick;
-		printf("correct 0\n");	
-	}
-}
-
-int withinBuffer(uint32_t tick){
-	//30 is the buffer we set
-	if((tick < tickOfLastBit+30) && (tick > tickOfLastBit-30)){
-		return 1;
+bool withinBuffer(uint32_t tick, int edgeDirection){
+	//5000 is the buffer we set
+	int buff = 5000;
+	uint32_t correctTick = (startTick + (2* DELTA_T));	
+	int diff = correctTick - tick;	
+//	printf("correctTick: %u, tick: %u, diff: %d\n", correctTick, tick, diff);
+	if((tick < (correctTick + buff)) && (tick > (correctTick-buff))){
+		printf("Within range: %d\n", edgeDirection);
+		//printf("Tick within range. \n");
+		
+		startTick = tick;
+		return true;
 	}else{
-		return 0;
+		return false;
 	}
 }
+void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
+	//printf("Down - tick: %u\n", (tick-STARTTEST));
+	//printf("Down\n");
+	// disregard first (and eventually last) edge 
+		if (withinBuffer(tick, 1)){
+			startTick = tick;
+		//	printf("Read falling: %u\n", level);
+			
+		//	printf("StartTick set: %u", tick);
+			count += 1;
+		}
+
+
+	}
+void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
+	//printf("Up\n");
+	
+	//printf("Up - tick: %u\n", (tick-STARTTEST));
+	// disregard first (and eventually last) edge
+	if (count == 0){
+		STARTTEST =tick;
+		startTick = tick;
+		printf("Disegarded.\n");
+		//printf("Header read! Start tick: %u\n", tick);
+		count += 1;
+	}
+	else if (withinBuffer(tick, 0)){
+		//printf("Read rising: %u\n", level);
+		//printf("StartTick set: %u", tick);
+		count += 1;
+		}
+
+}
+
 
 int recieveHandshake(int pi){
-	//int fallingEdge = callback(pi,20,1,callBackfunc);
-	//int primaryState = gpio_read(pi, 20);
-	//int currentState = primaryState;
-	//printf("primary: %d\n", primaryState);
-	int callbackFall = callback(pi,20,FALLING_EDGE,fallingFunc);
-	int callbackRise = callback(pi,20,RISING_EDGE,risingFunc);
 	
-	while(1){	
+	callback(pi,20,FALLING_EDGE,fallingFunc);
+	callback(pi,20,RISING_EDGE,risingFunc);
+	
+	while(1){
 
 	}
 /*
