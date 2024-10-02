@@ -22,7 +22,7 @@ uint32_t STARTTEST = 0;
 int count = 0;
 #define DELTA_T 8000
 #define MAX_BITS 800
-char bitBuffer[MAX_BITS];
+char* bitBuffer;	//[MAX_BITS];
 int bitCt = 0;
 int lastEdgeDir =-1; //no prev edge
 bool hasRisen = false;
@@ -38,12 +38,14 @@ int main(){
 	int RECEIVE_MODE = 1;
 	int pi = pigpio_start(NULL,NULL);
 	int mode = SEND_MODE;
-	
-	send_mode(pi); // waits until i send
-	printf("Recieving:\n");
-	receiveHandshake(pi); // wait until something has been sent --> switch back
-	printf("Sending:\n");
-	send_mode(pi);	
+
+	for(int i = 0; i <20; i++){
+		printf("Recieving:\n");
+		receiveHandshake(pi); // wait until something has been sent --> switch back
+		printf("Sending:\n");
+		send_mode(pi);
+	}	
+
 	/**
 	if (mode == SEND_MODE){
 		send_mode(pi);
@@ -52,6 +54,7 @@ int main(){
 		receiveHandshake(pi);
 	}
 	*/
+	//free();
 	pigpio_stop(pi);
 	return 0;
 }
@@ -59,13 +62,14 @@ int main(){
 int send_mode(int pi){
 
 		//read ASCII bits user sends (same size 101)
-		//char text[101];
-		char *text = malloc(101);
+		char text[400];
+		//char *text = malloc(101);
 		char *binary;
 		int binaryLength;
     	printf("Enter a sentence (max 100 characters): ");
-    	scanf("%100[^\n]", text); //read any char except newline char [^\n], max100
-
+    	//	scanf("%100[^\n]", text); //read any char except newline char [^\n], max100
+		//scanf("%100s[^\n]", text);	
+		fgets(text, sizeof(text), stdin);
 		binaryLength = strlen(text) * 8; //8 bit ASCII chars
 		binary =  malloc(binaryLength + 1); //+1 for null ptr
 
@@ -83,7 +87,7 @@ int send_mode(int pi){
 
 		//send read binary data
 		for (int i =0; binary[i]!= '\0';i++){
-			printf("%c\n",binary[i]);
+	//		printf("%c\n",binary[i]);
 			int bit = binary[i] - '0';
 			send_info(pi,bit);
 
@@ -92,9 +96,9 @@ int send_mode(int pi){
 		gpio_write(pi,27,0);
 		usleep(DELTA_T);
 		free(binary);
-		free(text);
+		//free(text);
 	
-		
+	//fclose(stdin);	
 	return 0;
 		//receiveHandshake(pi);
 
@@ -140,10 +144,6 @@ char binaryToASCII(char *binary){
 
 	
 }
-void binaryInterpreter(char arr[]){
-
-
-}
 //convert single character uinto its 8bit binary representation
 void charToBinary(unsigned char decimal, char *eight) { //char =ascii char, eight==char arr for binary string to be stored (9 long to hold 8 bit and terminator)
     //bitwise to extract bits
@@ -173,7 +173,6 @@ void asciiToBinary(char *text, char *binary) { //exclude spaces (line25)
 }
 bool withinBuffer(uint32_t tick, int edgeDirection){
 	// set buffer of 5000
-//	printf("Buffer test\n");
     int buff = 5000;
     uint32_t correctTick = startTick + (2 * DELTA_T);
    //int diff = correctTick - tick;
@@ -232,13 +231,11 @@ void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 	}
 void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 	//printf("Up\n");
-	
 	//printf("Up - tick: %u\n", (tick-STARTTEST));
 	// disregard first (and eventually last) edge
 	//int edgeDirection = 1;
 	hasRisen = true;
 	if (count == 0){
-		STARTTEST =tick;
 		startTick = tick;
 	//	printf("Header bit disegarded.\n");
 		//printf("Header read! Start tick: %u\n", tick);
@@ -259,14 +256,19 @@ int receiveHandshake(int pi){
 	callback(pi,20,FALLING_EDGE,fallingFunc);
 	callback(pi,20,RISING_EDGE,risingFunc);
 	
+	bitBuffer = malloc(MAX_BITS);
 	//usleep(5000000);
 	//return 0;
 	while(1){
+	//	usleep(1000);
 		clock_t current = clock();
-		int diff = current - (int) lastFallTime; 
-		if ((lastFallTime != 0) && (diff > 15*DELTA_T)){
+		int diff = current - (int) lastFallTime;	
+		if ((lastFallTime != 0) && (diff > 20*DELTA_T)){
 			printf("\nreceiving over\n");
 			lastFallTime = 0;
+			hasRisen = false;
+			count = 0;
+			free(bitBuffer);
 			return 0;
 		}	
 			
