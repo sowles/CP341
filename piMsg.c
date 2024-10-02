@@ -20,9 +20,9 @@
 uint32_t startTick = 0;
 uint32_t STARTTEST = 0;
 int count = 0;
-#define DELTA_T 8000
-#define MAX_BITS 800
-char* bitBuffer;	//[MAX_BITS];
+#define DELTA_T 6000
+#define MAX_BITS 1600 // maximum number of bits we can record in a message
+char* bitBuffer;
 int bitCt = 0;
 int lastEdgeDir =-1; //no prev edge
 bool hasRisen = false;
@@ -40,7 +40,7 @@ int main(){
 	int mode = SEND_MODE;
 
 	for(int i = 0; i <20; i++){
-		printf("Recieving:\n");
+		printf("Receiving:\n");
 		receiveHandshake(pi); // wait until something has been sent --> switch back
 		printf("Sending:\n");
 		send_mode(pi);
@@ -62,8 +62,7 @@ int main(){
 int send_mode(int pi){
 
 		//read ASCII bits user sends (same size 101)
-		char text[400];
-		//char *text = malloc(101);
+		char text[200];
 		char *binary;
 		int binaryLength;
     	printf("Enter a sentence (max 100 characters): ");
