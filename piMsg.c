@@ -31,6 +31,7 @@ clock_t lastFallTime;
 int receiveHandshake(int pi);
 int send_info(int pi, int bit);
 char binaryToASCII(char*);
+void asciiToBinary(char *text, char *binary); 
 
 int main(){
 	int SEND_MODE = 0;
@@ -38,10 +39,11 @@ int main(){
 	int pi = pigpio_start(NULL,NULL);
 	int mode = SEND_MODE;
 	
+	send_mode(pi); // waits until i send
 	printf("Recieving:\n");
 	receiveHandshake(pi); // wait until something has been sent --> switch back
-	
-	send_mode(pi); // waits until i send
+	printf("Sending:\n");
+	send_mode(pi);	
 	/**
 	if (mode == SEND_MODE){
 		send_mode(pi);
@@ -57,7 +59,8 @@ int main(){
 int send_mode(int pi){
 
 		//read ASCII bits user sends (same size 101)
-		char text[101];
+		//char text[101];
+		char *text = malloc(101);
 		char *binary;
 		int binaryLength;
     	printf("Enter a sentence (max 100 characters): ");
@@ -72,13 +75,15 @@ int send_mode(int pi){
 
 		}
 		asciiToBinary(text, binary);
-
+		//printf("text: ");
+		//printf(text);
 		//send header bit
 		gpio_write(pi,27,1);
 		usleep(DELTA_T);
 
 		//send read binary data
 		for (int i =0; binary[i]!= '\0';i++){
+			printf("%c\n",binary[i]);
 			int bit = binary[i] - '0';
 			send_info(pi,bit);
 
@@ -87,11 +92,15 @@ int send_mode(int pi){
 		gpio_write(pi,27,0);
 		usleep(DELTA_T);
 		free(binary);
+		free(text);
+	
+		
+	return 0;
 		//receiveHandshake(pi);
 
 }
 int send_info(int pi, int bit){	
-
+//printf("in send info\n");
 	gpio_write(pi,27,bit);
 	usleep(DELTA_T);	
 	if(bit == 1){
@@ -256,7 +265,8 @@ int receiveHandshake(int pi){
 		clock_t current = clock();
 		int diff = current - (int) lastFallTime; 
 		if ((lastFallTime != 0) && (diff > 15*DELTA_T)){
-			printf("receiving over\n");
+			printf("\nreceiving over\n");
+			lastFallTime = 0;
 			return 0;
 		}	
 			
