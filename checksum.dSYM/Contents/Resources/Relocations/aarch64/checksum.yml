@@ -2,10 +2,11 @@
 triple:          'arm64-apple-darwin'
 binary-path:     '/Users/georgesowles/Desktop/CP341Repo/checksum'
 relocations:
-  - { offset: 0x26, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100002DF4, symSize: 0x234 }
-  - { offset: 0x41, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100002DF4, symSize: 0x234 }
-  - { offset: 0xA1, size: 0x8, addend: 0x0, symName: _ec_encode, symObjAddr: 0x234, symBinAddr: 0x100003028, symSize: 0x320 }
-  - { offset: 0x127, size: 0x8, addend: 0x0, symName: _ec_decode, symObjAddr: 0x554, symBinAddr: 0x100003348, symSize: 0xA9C }
-  - { offset: 0x239, size: 0x8, addend: 0x0, symName: _sender_calculate_parity, symObjAddr: 0xFF0, symBinAddr: 0x100003DE4, symSize: 0xB4 }
-  - { offset: 0x287, size: 0x8, addend: 0x0, symName: _receiver_calculate_parity, symObjAddr: 0x10A4, symBinAddr: 0x100003E98, symSize: 0xBC }
+  - { offset: 0x26, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100002F4C, symSize: 0x224 }
+  - { offset: 0x41, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100002F4C, symSize: 0x224 }
+  - { offset: 0xA1, size: 0x8, addend: 0x0, symName: _ec_decode, symObjAddr: 0x224, symBinAddr: 0x100003170, symSize: 0x8E4 }
+  - { offset: 0x1EB, size: 0x8, addend: 0x0, symName: _sender_calculate_parity, symObjAddr: 0xB08, symBinAddr: 0x100003A54, symSize: 0xB4 }
+  - { offset: 0x239, size: 0x8, addend: 0x0, symName: _receiver_calculate_parity, symObjAddr: 0xBBC, symBinAddr: 0x100003B08, symSize: 0xBC }
+  - { offset: 0x295, size: 0x8, addend: 0x0, symName: _ec_encode, symObjAddr: 0xC78, symBinAddr: 0x100003BC4, symSize: 0x320 }
+  - { offset: 0x31B, size: 0x8, addend: 0x0, symName: _bitFlip, symObjAddr: 0xF98, symBinAddr: 0x100003EE4, symSize: 0x58 }
 ...

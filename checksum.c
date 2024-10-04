@@ -43,8 +43,8 @@ int main() {
 
     int *decArr = malloc(sizeof(int)*16); 
     //first bit ignored to set    0110110000101011
-    decArr[0] = 1;
-    decArr[1] = 1;
+    decArr[0] = 0;
+    decArr[1] = 0;
     decArr[2] = 1;
     decArr[3] = 0;
     decArr[4] = 1;
@@ -163,7 +163,7 @@ void ec_decode(int * decArr, int * decRetArr){
     int p5 = (decArr[8] + decArr[10] +decArr[11]) %2;
     int p6 = (decArr[8] + decArr[9] + decArr[11]) %2;
     int p7 = (decArr[9] + decArr[10] + decArr[11]) %2;
-    int p8 = (decArr[8] + decArr[9] + decArr[10] + decArr[11] + p1 + p2 +p3) %2;
+    int p8 = (decArr[8] + decArr[9] + decArr[10] + decArr[11] + p5 + p6 +p7) %2;
     
     int c_0 = p1 == decArr[4]; //boolints: 1 true 0 false 
     int c_1 = p2 == decArr[5];
@@ -174,20 +174,25 @@ void ec_decode(int * decArr, int * decRetArr){
     int c_6 = p7 == decArr[14];
     int c_7 = p8 == decArr[15];
 
-
+    for (int i = 0; i < 16; i++)
+    {
+        printf("%d", decArr[i]);
+    
+    }   
+    printf("\n");
     if(c_0&&c_1&&c_2&&c_3&&c_4&&c_5&&c_6&&c_7) {
          printf("Decoded with no errors!!!");
 
-    } else if (c_3 || c_7){
-        printf("Two errors!\n");
+    } else if (c_3 && c_7){
+        printf("Two errors 3!\n");
     } else if(!c_0&&!c_1&&c_2&&c_3){
         bitFlip(decArr, 3);
     }else if(!c_0&&!c_1&&!c_3){
         //flip the bit
         bitFlip(decArr, 0);
-    }else if(!c_1&&!c_2&&c_3){
+    }else if(!c_1&&!c_2&&!c_3){
         bitFlip(decArr, 1);
-    }else if(!c_0&&!c_2&&c_3){
+    }else if(!c_0&&!c_2&&!c_3){
         bitFlip(decArr, 2);
     }else if(!c_0){
         bitFlip(decArr, 4);
@@ -198,14 +203,14 @@ void ec_decode(int * decArr, int * decRetArr){
     }else if(!c_3){
         bitFlip(decArr, 7);
     }/* SECOND HALF */
-    else if(!c_0&&!c_1&&c_2&&c_3){
+    else if(!c_0&&!c_1&&!c_2&&!c_3){
         bitFlip(decArr, 11);
     }else if(!c_0&&!c_1&&!c_3){
         //flip the bit
         bitFlip(decArr, 8);
-    }else if(!c_1&&!c_2&&c_3){
+    }else if(!c_1&&!c_2&&!c_3){
         bitFlip(decArr, 9);
-    }else if(!c_0&&!c_2&&c_3){
+    }else if(!c_0&&!c_2&&!c_3){
         bitFlip(decArr, 10);
     }else if(!c_0){
         bitFlip(decArr, 12);
@@ -228,7 +233,11 @@ void ec_decode(int * decArr, int * decRetArr){
     decRetArr[6] = decArr[10];
     decRetArr[7] = decArr[11];
 
+    for (int i = 0; i < 16; i++)
+    {
+        printf("%d", decArr[i]);
     
+    }   
     printf("\n");
 }
 
