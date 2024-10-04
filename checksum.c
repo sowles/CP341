@@ -7,6 +7,7 @@ void receiver_calculate_parity(char arr[], char recarr[], int totalCount);
 void print_array(char arr[], int size);
 void ec_encode(int * sendArr, int * retArr);
 void ec_decode(int * decArr, int * decRetArr);
+void bitFlip(int * arr, int i);
 int main() {
     int tcount = 0;
     int *sendArr = malloc(sizeof(int)*8); 
@@ -63,14 +64,14 @@ int main() {
     int *deRetArr = malloc(sizeof(int)*8); 
     //first bit ignored to set
     
-    deRetArr[0] = 1;
-    deRetArr[1] = 1;
-    deRetArr[2] = 1;
-    deRetArr[3] = 1;
-    deRetArr[4] = 1;
-    deRetArr[5] = 1;
-    deRetArr[6] = 1;
-    deRetArr[7] = 1;
+    deRetArr[0] = 0;
+    deRetArr[1] = 0;
+    deRetArr[2] = 0;
+    deRetArr[3] = 0;
+    deRetArr[4] = 0;
+    deRetArr[5] = 0;
+    deRetArr[6] = 0;
+    deRetArr[7] = 0;
 
    ec_encode(sendArr, retArr);
    ec_decode(decArr, deRetArr);
@@ -157,7 +158,7 @@ void ec_decode(int * decArr, int * decRetArr){
     int p7 = (decRetArr[5] + decRetArr[6] + decRetArr[7]) %2;
     int p8 = (decRetArr[4] + decRetArr[5] + decRetArr[6] + decRetArr[7] + p1 + p2 +p3) %2;
     
-    int c_0 = p1 == decArr[4];
+    int c_0 = p1 == decArr[4]; //boolints: 1 true 0 false 
     int c_1 = p2 == decArr[5];
     int c_2 = p3 == decArr[6];
     int c_3 = p4 == decArr[7];
@@ -167,108 +168,47 @@ void ec_decode(int * decArr, int * decRetArr){
     int c_7 = p8 == decArr[15];
 
 
-    if( c_0&&c_1&&c_2&&c_3&&c_4&&c_5&&c_6&&c_7) {
+    if(c_0&&c_1&&c_2&&c_3&&c_4&&c_5&&c_6&&c_7) {
          printf("Decoded with no errors!");
 
+    } else if (c_3 || c_7){
+        printf("Two errors!\n");
+    } else if(!c_0&&!c_1&&c_2&&c_3){
+        bitFlip(decArr, 3);
     }else if(!c_0&&!c_1&&!c_3){
         //flip the bit
-        if(decRetArr[0] == 0){
-            decRetArr[0] = 1;
-        }else{
-            decRetArr[0] = 0;
-        }
-    }else if(!c_0&&!c_1&&c_2&&c_3){
-        if(decRetArr[3] == 0){
-            decRetArr[3] = 1;
-        }else{
-            decRetArr[3] = 0;
-        }
+        bitFlip(decArr, 0);
     }else if(!c_1&&!c_2&&c_3){
-        if(decRetArr[1] == 0){
-            decRetArr[1] = 1;
-        }else{
-            decRetArr[1] = 0;
-        }
-    }else if(!c_0&&!c_2&&c_2&&c_3){
-        if(decRetArr[2] == 0){
-            decRetArr[2] = 1;
-        }else{
-            decRetArr[2] = 0;
-        }
+        bitFlip(decArr, 1);
+    }else if(!c_0&&!c_2&&c_3){
+        bitFlip(decArr, 2);
     }else if(!c_0){
-        if(decArr[4] == 0){
-            decArr[4] = 1;
-        }else{
-            decArr[4] = 0;
-        }
+        bitFlip(decArr, 4);
     }else if(!c_1){
-        if(decArr[5] == 0){
-            decArr[5] = 1;
-        }else{
-            decArr[5] = 0;
-        }
+        bitFlip(decArr, 5);
     }else if(!c_2){
-        if(decArr[6] == 0){
-            decArr[6] = 1;
-        }else{
-            decArr[6] = 0;
-        }
+        bitFlip(decArr, 6);
     }else if(!c_3){
-        if(decArr[7] == 0){
-            decArr[7] = 1;
-        }else{
-            decArr[7] = 0;
-        }
+        bitFlip(decArr, 7);
     }/* SECOND HALF */
-    else if(!c_4&&!c_5&&!c_7){
+    else if(!c_0&&!c_1&&c_2&&c_3){
+        bitFlip(decArr, 11);
+    }else if(!c_0&&!c_1&&!c_3){
         //flip the bit
-        if(decRetArr[4] == 0){
-            decRetArr[4] = 1;
-        }else{
-            decRetArr[4] = 0;
-        }
-    }else if(!c_4&&!c_5&&c_6&&c_7){
-        if(decRetArr[7] == 0){
-            decRetArr[7] = 1;
-        }else{
-            decRetArr[7] = 0;
-        }
-    }else if(!c_5&&!c_6&&c_7){
-        if(decRetArr[5] == 0){
-            decRetArr[5] = 1;
-        }else{
-            decRetArr[5] = 0;
-        }
-    }else if(!c_4&&!c_6&&c_2&&c_7){
-        if(decRetArr[6] == 0){
-            decRetArr[6] = 1;
-        }else{
-            decRetArr[6] = 0;
-        }
-    }else if(!c_4){
-        if(decArr[12] == 0){
-            decArr[12] = 1;
-        }else{
-            decArr[12] = 0;
-        }
-    }else if(!c_5){
-        if(decArr[13] == 0){
-            decArr[13] = 1;
-        }else{
-            decArr[13] = 0;
-        }
-    }else if(!c_6){
-        if(decArr[14] == 0){
-            decArr[14] = 1;
-        }else{
-            decArr[14] = 0;
-        }
-    }else if(!c_7){
-        if(decArr[15] == 0){
-            decArr[15] = 1;
-        }else{
-            decArr[15] = 0;
-        }
+        bitFlip(decArr, 8);
+    }else if(!c_1&&!c_2&&c_3){
+        bitFlip(decArr, 9);
+    }else if(!c_0&&!c_2&&c_3){
+        bitFlip(decArr, 10);
+    }else if(!c_0){
+        bitFlip(decArr, 12);
+    }else if(!c_1){
+        bitFlip(decArr, 13);
+    }else if(!c_2){
+        bitFlip(decArr, 14);
+    }else if(!c_3){
+        bitFlip(decArr, 15);
+    
     }
     //recalculate
     decRetArr[0] = decArr[0];
@@ -283,4 +223,12 @@ void ec_decode(int * decArr, int * decRetArr){
 
     
     printf("\n");
+}
+
+void bitFlip(int * arr, int i){
+    if(arr[i] == 0){
+            arr[i] = 1;
+        }else{
+            arr[i] = 0;
+        }
 }
