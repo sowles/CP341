@@ -43,7 +43,7 @@ int main() {
 
     int *decArr = malloc(sizeof(int)*16); 
     //first bit ignored to set    0110110000101011
-    decArr[0] = 0;
+    decArr[0] = 1;
     decArr[1] = 1;
     decArr[2] = 1;
     decArr[3] = 0;
@@ -73,8 +73,15 @@ int main() {
     deRetArr[6] = 0;
     deRetArr[7] = 0;
 
-   ec_encode(sendArr, retArr);
+   //ec_encode(sendArr, retArr);
    ec_decode(decArr, deRetArr);
+    // for (int i = 0; i < 16; i++)
+    // {
+    //     printf("%d", deRetArr[i]);
+    
+    // }   
+    // printf("\n");
+
     free(sendArr);
     free(deRetArr);
     free(retArr);
@@ -148,15 +155,15 @@ void ec_encode(int * sendArr, int * retArr){
 
 void ec_decode(int * decArr, int * decRetArr){
 
-    int p1 = (decRetArr[0] + decRetArr[2] + decRetArr[3]) %2;
-    int p2 = (decRetArr[0] + decRetArr[1] + decRetArr[3]) %2;
-    int p3 = (decRetArr[1] + decRetArr[2] + decRetArr[3]) %2;
-    int p4 = (decRetArr[0] + decRetArr[1] + decRetArr[2] + decRetArr[3] + p1 + p2 +p3) %2;
+    int p1 = (decArr[0] + decArr[2] + decArr[3]) %2;
+    int p2 = (decArr[0] + decArr[1] + decArr[3]) %2;
+    int p3 = (decArr[1] + decArr[2] + decArr[3]) %2;
+    int p4 = (decArr[0] + decArr[1] + decArr[2] + decArr[3] + p1 + p2 +p3) %2;
 
-    int p5 = (decRetArr[4] + decRetArr[6] + decRetArr[7]) %2;
-    int p6 = (decRetArr[4] + decRetArr[5] + decRetArr[7]) %2;
-    int p7 = (decRetArr[5] + decRetArr[6] + decRetArr[7]) %2;
-    int p8 = (decRetArr[4] + decRetArr[5] + decRetArr[6] + decRetArr[7] + p1 + p2 +p3) %2;
+    int p5 = (decArr[8] + decArr[10] +decArr[11]) %2;
+    int p6 = (decArr[8] + decArr[9] + decArr[11]) %2;
+    int p7 = (decArr[9] + decArr[10] + decArr[11]) %2;
+    int p8 = (decArr[8] + decArr[9] + decArr[10] + decArr[11] + p1 + p2 +p3) %2;
     
     int c_0 = p1 == decArr[4]; //boolints: 1 true 0 false 
     int c_1 = p2 == decArr[5];
@@ -169,7 +176,7 @@ void ec_decode(int * decArr, int * decRetArr){
 
 
     if(c_0&&c_1&&c_2&&c_3&&c_4&&c_5&&c_6&&c_7) {
-         printf("Decoded with no errors!");
+         printf("Decoded with no errors!!!");
 
     } else if (c_3 || c_7){
         printf("Two errors!\n");
