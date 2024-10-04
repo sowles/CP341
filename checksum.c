@@ -147,17 +147,6 @@ void ec_encode(int * sendArr, int * retArr){
 
 void ec_decode(int * decArr, int * decRetArr){
 
-   //recalculate
-    decRetArr[0] = decArr[0];
-    decRetArr[1] = decArr[1];
-    decRetArr[2] = decArr[2];
-    decRetArr[3] = decArr[3];
-
-    decRetArr[4] = decArr[8];
-    decRetArr[5] = decArr[9];
-    decRetArr[6] = decArr[10];
-    decRetArr[7] = decArr[11];
-
     int p1 = (decRetArr[0] + decRetArr[2] + decRetArr[3]) %2;
     int p2 = (decRetArr[0] + decRetArr[1] + decRetArr[3]) %2;
     int p3 = (decRetArr[1] + decRetArr[2] + decRetArr[3]) %2;
@@ -167,7 +156,7 @@ void ec_decode(int * decArr, int * decRetArr){
     int p6 = (decRetArr[4] + decRetArr[5] + decRetArr[7]) %2;
     int p7 = (decRetArr[5] + decRetArr[6] + decRetArr[7]) %2;
     int p8 = (decRetArr[4] + decRetArr[5] + decRetArr[6] + decRetArr[7] + p1 + p2 +p3) %2;
-
+    
     int c_0 = p1 == decArr[4];
     int c_1 = p2 == decArr[5];
     int c_2 = p3 == decArr[6];
@@ -281,6 +270,16 @@ void ec_decode(int * decArr, int * decRetArr){
             decArr[15] = 0;
         }
     }
+    //recalculate
+    decRetArr[0] = decArr[0];
+    decRetArr[1] = decArr[1];
+    decRetArr[2] = decArr[2];
+    decRetArr[3] = decArr[3];
+
+    decRetArr[4] = decArr[8];
+    decRetArr[5] = decArr[9];
+    decRetArr[6] = decArr[10];
+    decRetArr[7] = decArr[11];
 
     
     printf("\n");
