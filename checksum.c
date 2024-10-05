@@ -8,6 +8,8 @@ void print_array(char arr[], int size);
 void ec_encode(int * sendArr, int * retArr);
 void ec_decode(int * decArr, int * decRetArr);
 void bitFlip(int * arr, int i);
+char binaryToASCII(char *binary);
+void tester();
 int main() {
     int tcount = 0;
     int *sendArr = malloc(sizeof(int)*8); 
@@ -42,9 +44,10 @@ int main() {
     retArr[15] = 0;
 
     int *decArr = malloc(sizeof(int)*16); 
-    //first bit ignored to set    0110110000101011
+    //0110110000101011
+    
     decArr[0] = 0;
-    decArr[1] = 0;
+    decArr[1] = 1;
     decArr[2] = 1;
     decArr[3] = 0;
     decArr[4] = 1;
@@ -59,7 +62,6 @@ int main() {
     decArr[13] = 0;
     decArr[14] = 1;
     decArr[15] = 1;
-
 
     int *deRetArr = malloc(sizeof(int)*8); 
     //first bit ignored to set
@@ -81,7 +83,7 @@ int main() {
     
     // }   
     // printf("\n");
-
+    //tester();
     free(sendArr);
     free(deRetArr);
     free(retArr);
@@ -145,12 +147,12 @@ void ec_encode(int * sendArr, int * retArr){
         retArr[i+8] = sendArr[i+4];
     }
     
-    for (int i = 0; i < 16; i++)
-    {
-        printf("%d", retArr[i]);
+    // for (int i = 0; i < 16; i++)
+    // {
+    //     printf("%d", retArr[i]);
     
-    }   
-    printf("\n");
+    // }   
+    // printf("\n");
 }
 
 void ec_decode(int * decArr, int * decRetArr){
@@ -174,6 +176,7 @@ void ec_decode(int * decArr, int * decRetArr){
     int c_6 = p7 == decArr[14];
     int c_7 = p8 == decArr[15];
 
+   // printf("1 bit flipped\n");
     for (int i = 0; i < 16; i++)
     {
         printf("%d", decArr[i]);
@@ -181,20 +184,29 @@ void ec_decode(int * decArr, int * decRetArr){
     }   
     printf("\n");
     if(c_0&&c_1&&c_2&&c_3&&c_4&&c_5&&c_6&&c_7) {
-         printf("Decoded with no errors!!!");
+         printf("Decoded with no errors!!!\n");
 
-    } else if (c_3 && c_7){
-        printf("Two errors 3!\n");
-    } else if(!c_0&&!c_1&&c_2&&c_3){
+    } 
+    else if (c_3 && (!c_1 || !c_2 || !c_0)){
+        printf("Two errors found.\n");
+    }
+    else if (c_7 && (!c_5 || !c_6 || !c_4)){
+        printf("Two errors found.\n");
+    }
+
+    else if(!c_0&&!c_1&&!c_2){
         bitFlip(decArr, 3);
-    }else if(!c_0&&!c_1&&!c_3){
+    // }else if (c_3 && c_7){
+    //     printf("Two errors 3!\n");
+     } else if(!c_0&&!c_1&&!c_3){
         //flip the bit
         bitFlip(decArr, 0);
     }else if(!c_1&&!c_2&&!c_3){
         bitFlip(decArr, 1);
     }else if(!c_0&&!c_2&&!c_3){
         bitFlip(decArr, 2);
-    }else if(!c_0){
+    } 
+    else if(!c_0){
         bitFlip(decArr, 4);
     }else if(!c_1){
         bitFlip(decArr, 5);
@@ -202,23 +214,27 @@ void ec_decode(int * decArr, int * decRetArr){
         bitFlip(decArr, 6);
     }else if(!c_3){
         bitFlip(decArr, 7);
-    }/* SECOND HALF */
-    else if(!c_0&&!c_1&&!c_2&&!c_3){
+    } 
+    /* SECOND HALF */
+    
+    if(!c_4&&!c_5&&!c_6){
         bitFlip(decArr, 11);
-    }else if(!c_0&&!c_1&&!c_3){
+    }else if(!c_4&&!c_5&&!c_7){
         //flip the bit
         bitFlip(decArr, 8);
-    }else if(!c_1&&!c_2&&!c_3){
+    }else if(!c_5&&!c_6&&!c_7){
         bitFlip(decArr, 9);
-    }else if(!c_0&&!c_2&&!c_3){
+    }else if(!c_4&&!c_6&&!c_7){
         bitFlip(decArr, 10);
-    }else if(!c_0){
+    } 
+    
+    else if(!c_4){
         bitFlip(decArr, 12);
-    }else if(!c_1){
+    }else if(!c_5){
         bitFlip(decArr, 13);
-    }else if(!c_2){
+    }else if(!c_6){
         bitFlip(decArr, 14);
-    }else if(!c_3){
+    }else if(!c_7){
         bitFlip(decArr, 15);
     
     }
@@ -233,6 +249,7 @@ void ec_decode(int * decArr, int * decRetArr){
     decRetArr[6] = decArr[10];
     decRetArr[7] = decArr[11];
 
+   // printf("Bit flipped back\n");
     for (int i = 0; i < 16; i++)
     {
         printf("%d", decArr[i]);
@@ -247,4 +264,41 @@ void bitFlip(int * arr, int i){
         }else{
             arr[i] = 0;
         }
+}
+
+void tester(){
+    // for(int i = 96; i <= 255; i++) {
+    //   fprintf(stdout, "[%d]: %c\n", i, i);
+    // }
+    int *decArr = malloc(sizeof(int)*16); 
+    //first bit ignored to set    0110110000101011
+    decArr[0] = 0;
+    decArr[1] = 1;
+    decArr[2] = 1;
+    decArr[3] = 0;
+    decArr[4] = 1;
+    decArr[5] = 1;
+    decArr[6] = 0;
+    decArr[7] = 0;
+    decArr[8] = 0;
+    decArr[9] = 0;
+    decArr[10] = 1;
+    decArr[11] = 0;
+    decArr[12] = 1;
+    decArr[13] = 0;
+    decArr[14] = 1;
+    decArr[15] = 1;
+    int *deRetArr = malloc(sizeof(int)*8); 
+
+
+
+    for (int i = 0; i < 16; i++){
+        printf("Idx: %d\n", i);
+        int correct = decArr[i];
+        decArr[i] = !decArr[i];
+        ec_decode(decArr, deRetArr);
+
+    }
+
+
 }

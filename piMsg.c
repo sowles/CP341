@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "checksum.c"
 	//KNOWN PINS
 	//Port 1 tx: 27
 	//Port 1 rx: 26
