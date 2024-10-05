@@ -10,6 +10,7 @@ void ec_decode(int * decArr, int * decRetArr);
 void bitFlip(int * arr, int i);
 char binaryToASCII(char *binary);
 void tester();
+/**
 int main() {
     int tcount = 0;
     int *sendArr = malloc(sizeof(int)*8); 
@@ -90,7 +91,7 @@ int main() {
     free(decArr);
     return 0;
 }
-
+*/
 void sender_calculate_parity(char arr[], int totalCount) {
     for (int i = 1; i < 8; i++) {
         if (arr[i] == 1) {
@@ -294,7 +295,7 @@ void tester(){
 
     for (int i = 0; i < 16; i++){
         printf("Idx: %d\n", i);
-        int correct = decArr[i];
+        //int correct = decArr[i];
         decArr[i] = !decArr[i];
         ec_decode(decArr, deRetArr);
 

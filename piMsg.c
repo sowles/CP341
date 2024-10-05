@@ -33,12 +33,10 @@ int receiveHandshake(int pi);
 int send_info(int pi, int bit);
 char binaryToASCII(char*);
 void asciiToBinary(char *text, char *binary); 
+int send_mode(int pi);
 
 int main(){
-	int SEND_MODE = 0;
-	int RECEIVE_MODE = 1;
 	int pi = pigpio_start(NULL,NULL);
-	int mode = SEND_MODE;
 
 	for(int i = 0; i <20; i++){
 		printf("Receiving:\n");
@@ -124,11 +122,22 @@ int send_info(int pi, int bit){
 char binaryToASCII(char *binary){
 //	printf("Binary to ascii running\n");
 	double decimal = 0.0;
+	// take our 16 bits, convert to 8 bits using decode
+	int * return_arr = malloc(sizeof(int)*8);
+	int* param_arr = malloc(sizeof(int)*16);
+	for (int i = 0; i <16; i++){
+		param_arr[i] = (int) binary[i];
+	}
+
+	ec_decode(param_arr, return_arr);
+	// possibly need to change return_arr to char
+
+	// takes 8 bits, converts to decimal
 	for (int i=7; i >=0 ;i--){
 	//	printf("%d\n", binary[i]);
 		double base = 2.0;
 		double exp = 7-i;	
-		decimal += binary[i] * (pow(base,exp));
+		decimal += return_arr[i] * (pow(base,exp));
 		
 		//asciiChar <<= 1;
 		//if(binary[i] == '1'){
@@ -139,6 +148,7 @@ char binaryToASCII(char *binary){
 		
 	//printf("%f\n", decimal);	
 	char asciiChar = (int) decimal;
+
 	return asciiChar; 
 
 
@@ -150,11 +160,29 @@ void charToBinary(unsigned char decimal, char *eight) { //char =ascii char, eigh
 	for(int i = 7; i >= 0; --i) {
         eight[7 - i] = ((decimal >> i) & 1) + '0';
     }
+	int* encode_param = malloc(sizeof(int)*8);
+	int* encode_ret = malloc(sizeof(int)*16);
+	// convert eight to int
+	for (int i= 0; i < 8; i++){
+		encode_param[i] = (int) eight[i];
+	}
+	// call encode function
+	ec_encode(encode_param, encode_ret);
+
+	for(int i = 0; i<16; i++){
+		char temp = (char) encode_ret;
+		eight[i] = temp;
+	}
+	// switch the sixteen return arr to char 
+	
+	free(encode_param);
+	free(encode_ret);
+
     eight[8] = '\0'; // Null-terminate the string
 }
 //converts string of ASCII chars to binary string (goes through each char and concatennates results)
 void asciiToBinary(char *text, char *binary) { //exclude spaces (line25)
-    char *eight = malloc(9); //alloc 8-bit mem to represent each character sent
+    char *eight = malloc(17); //alloc 8-bit mem to represent each character sent
     if (eight == NULL)
         exit(1);
     while(*text) // loop through each char
@@ -189,13 +217,13 @@ bool withinBuffer(uint32_t tick, int edgeDirection){
             //store bits in bitBuffer
 	bitBuffer[bitCt++] = edgeDirection;
             // check to see if we have received 8 bits ( each char 8 bits)
-            if (bitCt % 8 == 0){
+            if (bitCt % 16 == 0){
 		    //printf("Byte sent\n");
-                char byteStr[9];
+                char byteStr[16];
                 for(int i = 0; i < 8; i++){
-                    byteStr[i] = bitBuffer[bitCt - 8+i];
+                    byteStr[i] = bitBuffer[bitCt - 16+i];
                 }
-                byteStr[8] = '\0';
+                byteStr[16] = '\0';
 		
                 char asciiChar = binaryToASCII(byteStr); //converts bites receeived to ASCII chars
                 printf("%c", asciiChar);
