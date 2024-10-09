@@ -7,6 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include "checksum.h"
+#include <pthread.h>
 	//KNOWN PINS
 	//Port 1 tx: 27
 	//Port 1 rx: 26
@@ -29,21 +30,35 @@ int lastEdgeDir =-1; //no prev edge
 bool hasRisen = false;
 clock_t lastFallTime;
 
-int receiveHandshake(int pi);
+void* receiveHandshake(void* args);
+
 int send_info(int pi, int bit);
 char binaryToASCII(char*);
 void asciiToBinary(char *text, char *binary); 
-int send_mode(int pi);
+void* send_mode(void* args);
+//void *send_mode(int pi);
+int pi;
 
 int main(){
-	int pi = pigpio_start(NULL,NULL);
+
+	pi = pigpio_start(NULL,NULL);
+
+	pthread_t rec_thread;
+	pthread_create(&rec_thread, NULL,&receiveHandshake, NULL);
+	pthread_t send_thread;
+	pthread_create(&send_thread, NULL,&send_mode, NULL);
+
+	while(1){
+	printf("Starting rec\n");
+	pthread_join(rec_thread, NULL);
+	printf("Starting send\n");
+	pthread_join(send_thread, NULL);
+	}
 
 	for(int i = 0; i <20; i++){
-		printf("Receiving:\n");
-		receiveHandshake(pi); // wait until something has been sent --> switch back
-
-		printf("Sending:\n");
-		send_mode(pi);
+		//send_mode(pi);
+	//	printf("Receiving:\n");
+	//	receiveHandshake(pi); // wait until something has been sent --> switch back
 	}	
 
 	/**
@@ -59,17 +74,28 @@ int main(){
 	return 0;
 }
 
-int send_mode(int pi){
+void* send_mode(void* args){
+	printf("Sending:\n");
 
+//	while(1){
+		
 		//read ASCII bits user sends (same size 101)
-		char text[400];
-		//char * text = calloc(201, sizeof(char));
+	//	char text[400];
+		char * text = NULL;
 		char *binary;
 		int binaryLength;
     	printf("Enter a sentence (max 100 characters): ");
     	//	scanf("%100[^\n]", text); //read any char except newline char [^\n], max100
-		//scanf("%100s[^\n]", text);	
-		fgets(text, sizeof(text), stdin);
+		//scanf("%100s[^\n]", text);
+			
+		
+	//	fgets(text, sizeof(text), stdin);
+		size_t size = 30;
+		ssize_t read = getline(&text, &size, stdin);
+		
+		usleep(sizeof(text)*DELTA_T);
+
+		//fclose(stdin);
 		binaryLength = strlen(text) * 16; //16 bit ASCII chars
 		binary =  calloc(binaryLength + 1, sizeof(char)); //+1 for null ptr
 
@@ -79,15 +105,13 @@ int send_mode(int pi){
 
 		}
 		asciiToBinary(text, binary);
-		//printf("text: ");
 		//printf(text);
 		//send header bit
 		gpio_write(pi,27,1);
 		usleep(DELTA_T);
-
 		//send read binary data
 		for (int i =0; binary[i]!= '\0';i++){
-	//		printf("%c\n",binary[i]);
+//			printf("%c\n",binary[i]);
 			int bit = binary[i] - '0';
 			send_info(pi,bit);
 
@@ -96,10 +120,10 @@ int send_mode(int pi){
 		gpio_write(pi,27,0);
 		usleep(DELTA_T);
 		free(binary);
-		//free(text);
-	
+		free(text);
+//}
 	//fclose(stdin);	
-	return 0;
+	pthread_exit(NULL);
 		//receiveHandshake(pi);
 
 }
@@ -122,7 +146,7 @@ int send_info(int pi, int bit){
 
 }
 char binaryToASCII(char *binary){
-	//printf("Binary to ascii running\n");
+//	printf("Binary to ascii running\n");
 	double decimal = 0.0;
 	// take our 16 bits, convert to 8 bits using decode
  	
@@ -237,9 +261,9 @@ void asciiToBinary(char *text, char *binary) { //exclude spaces (line25)
     *binary = '\0'; //nullterm
 
     // binary -= binaryLength;
-    //printf("before free eight\n");
+   // printf("before free eight\n");
     free(eight);
-  //  printf("After free eight");
+   // printf("After free eight");
 }
 bool withinBuffer(uint32_t tick, int edgeDirection){
 	
@@ -248,7 +272,7 @@ bool withinBuffer(uint32_t tick, int edgeDirection){
     int buff = 5000;
     uint32_t correctTick = startTick + (2 * DELTA_T);
    int diff = correctTick - tick;
-//	printf("correctTick: %u, tick: %u, diff: %d\n", correctTick, tick, diff);
+	//printf("correctTick: %u, tick: %u, diff: %d\n", correctTick, tick, diff);
 
     if((tick < (correctTick + buff)) && (tick > (correctTick - buff))){
 	
@@ -324,7 +348,7 @@ void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 }
 
 
-int receiveHandshake(int pi){
+void* receiveHandshake(void* args){
 	
 	// callback(pi,EITHER_EDGE,edgeCallback)
 	callback(pi,20,FALLING_EDGE,fallingFunc);
@@ -333,7 +357,7 @@ int receiveHandshake(int pi){
 	bitBuffer = malloc(MAX_BITS);
 	//usleep(5000000);
 	//return 0;
-	while(1){
+	//while(1){
 	//	usleep(1000);
 		clock_t current = clock();
 		int diff = current - (int) lastFallTime;	
@@ -343,9 +367,13 @@ int receiveHandshake(int pi){
 			hasRisen = false;
 			count = 0;
 			free(bitBuffer);
-			return 0;
+		//	bitBuffer = malloc(MAX_BITS);
+			pthread_exit(NULL);
+
+		//	return 0;
 		}	
 			
-	}
+	//}
+//	return 0;
 
 }
