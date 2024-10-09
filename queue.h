@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define MAX_SIZE 20
 
 
@@ -13,7 +14,9 @@ typedef struct {
 	
 	int size;
 	
-} Queue;
+} 
+
+Queue;
 
 //create q
 void init_queue(Queue* q){
@@ -34,7 +37,7 @@ int isFull(Queue* q){
 	
 // ret_arr is an empty array being passed in which will be filled
 //Function to remove an emnt from the queue (dequeue)
-int dequeue(Queue* q){
+char *  dequeue(Queue* q, char * ret){
 	if(isEmpty(q)){
 	    printf("queue is empty\n");
 	    return NULL; // null = error
@@ -44,11 +47,16 @@ int dequeue(Queue* q){
 	if (q->first == q->last){
 	//one elmnt present
 	q->first = -1;
-	q->rear = -1;
+	q->last = -1;
 
 
 	} else {q->first = (q->first+1) % MAX_SIZE;}
-	return element; // return ptr
+	
+	ret = malloc(strlen(element));
+	for (int i = 0; i < strlen(element); i++){
+		ret[i] = element[i];
+	}
+		
 
 	
 	// 'return' the first element
@@ -60,23 +68,23 @@ int dequeue(Queue* q){
 // function to get element at the front of our queue
 
 int enqueue(Queue* q,char *element){
-    if(isFull(q)){
+    char *  item;
+if(isFull(q)){
     printf("Queue is full\n");
-    return;
-    }
+    	return 1;
+  }
     if(isEmpty(q)){
         q->first =0;
     }
-    q->last = (q->last + 1 % MAX_SIZE;
-    q->arr[q->rear] = item; ///store ptr directly
+    q->last = (q->last + 1 % MAX_SIZE);
+    q->arr[q->last] = item; ///store ptr directly
 
-    }
     //can also use malloc toalloc memory and strcpy to copy string and free at end if this implmeentation doesnt work
     
 
     // add the arr to last open position
 
     q->first++;
-
-
+	q->size++;
+	return 0;
 }
