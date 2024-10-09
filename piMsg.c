@@ -35,7 +35,7 @@ void* receiveHandshake(void* args);
 int send_info(int pi, int bit);
 char binaryToASCII(char*);
 void asciiToBinary(char *text, char *binary); 
-void* send_mode(void* args);
+int send_mode();
 //void *send_mode(int pi);
 int pi;
 
@@ -45,16 +45,11 @@ int main(){
 
 	pthread_t rec_thread;
 	pthread_create(&rec_thread, NULL,&receiveHandshake, NULL);
-	pthread_t send_thread;
-	pthread_create(&send_thread, NULL,&send_mode, NULL);
 
 	while(1){
-	printf("Starting rec\n");
-	pthread_join(rec_thread, NULL);
-	printf("Starting send\n");
-	pthread_join(send_thread, NULL);
+		send_mode(pi);
 	}
-
+	
 	for(int i = 0; i <20; i++){
 		//send_mode(pi);
 	//	printf("Receiving:\n");
@@ -74,7 +69,7 @@ int main(){
 	return 0;
 }
 
-void* send_mode(void* args){
+int send_mode(){
 	printf("Sending:\n");
 
 //	while(1){
@@ -123,7 +118,7 @@ void* send_mode(void* args){
 		free(text);
 //}
 	//fclose(stdin);	
-	pthread_exit(NULL);
+	return 0;
 		//receiveHandshake(pi);
 
 }
@@ -162,7 +157,7 @@ char binaryToASCII(char *binary){
 
 	// takes 8 bits, converts to decimal
 	for (int i=7; i >=0 ;i--){
-	//	printf("%d\n", binary[i]);
+		//printf("%d,", binary[i]);
 		double base = 2.0;
 		double exp = 7-i;	
 		decimal += return_arr[i] * (pow(base,exp)); // TODO: switch to return_arr[i]
@@ -173,10 +168,11 @@ char binaryToASCII(char *binary){
 
 
 		}
-		
+//	printf("  ");	
 	//printf("%f\n", decimal);	
 	char asciiChar = (int) decimal;
 
+	
 	return asciiChar; 
 
 
@@ -288,15 +284,21 @@ bool withinBuffer(uint32_t tick, int edgeDirection){
             // check to see if we have received 8 bits ( each char 8 bits)
             if (bitCt % 16 == 0){ //TODO change back to 16 instead of 8, as well as the next 4 lines
 		    //printf("Byte sent\n");
+		
+			
+
                 char byteStr[16];
                 for(int i = 0; i < 16; i++){
                     byteStr[i] = bitBuffer[bitCt - 16+i];
-		    
+		//  	printf("%d,", byteStr[i]); 
                 }
+	//	printf("  ");
+
+
                 byteStr[16] = '\0';
                 char asciiChar = binaryToASCII(byteStr); //converts bites receeived to ASCII chars
-		
-                printf("%c", asciiChar);
+
+               	printf("%c", asciiChar); //TODO put this back in!
                 fflush(stdout); 
             }
 	    else{
@@ -316,6 +318,7 @@ void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 	int edgeDirection = 1;
 	
 	if (withinBuffer(tick, edgeDirection)){
+		//	printf("%d,",1);
 			startTick = tick;
 			count += 1;
 		//	printf("Read falling: %u\n", level);
@@ -340,6 +343,7 @@ void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 		count += 1;
 	}
 	else if (withinBuffer(tick, 0)){
+	//	printf("%d,",0);
 		//printf("Read rising: %u\n", level);
 		//printf("StartTick set: %u", tick);
 		count += 1;
@@ -357,23 +361,24 @@ void* receiveHandshake(void* args){
 	bitBuffer = malloc(MAX_BITS);
 	//usleep(5000000);
 	//return 0;
-	//while(1){
+	while(1){
 	//	usleep(1000);
 		clock_t current = clock();
 		int diff = current - (int) lastFallTime;	
 		if ((lastFallTime != 0) && (diff > 40*DELTA_T)){
-			printf("\nreceiving over\n");
+		//	printf("\nreceiving over\n");
 			lastFallTime = 0;
 			hasRisen = false;
 			count = 0;
 			free(bitBuffer);
-		//	bitBuffer = malloc(MAX_BITS);
-			pthread_exit(NULL);
+			bitBuffer = malloc(MAX_BITS);
+		//	pthread_exit(NULL);
+			printf("\n");
 
 		//	return 0;
 		}	
 			
-	//}
+	}
 //	return 0;
 
 }
