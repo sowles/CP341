@@ -4,6 +4,7 @@
 #define MAX_SIZE 20
 
 
+
 typedef struct {
 	// arr holds pointers to our messages
 	
@@ -18,73 +19,95 @@ typedef struct {
 
 Queue;
 
+void init_queue(Queue* q);
+void enqueue(Queue* q, char *element);
+int dequeue(Queue* q, char** element);
+/**
+int main(){
+	
+	Queue q;
+
+	init_queue(&q);
+	enqueue(&q, "banana");
+	enqueue(&q, "apple");
+	enqueue(&q, "dog");
+	enqueue(&q, "cherry");
+	enqueue(&q, "mango");
+	
+	char *element;
+	int test = dequeue(&q, &element);
+	printf("Dequeue'd: %s\n",element);
+
+	return 0;	
+}
+*/
+
+
+
+
 //create q
 void init_queue(Queue* q){
 	q->size = 0;
+	q->first = -1;
+	q->last = -1;
 
 }
 
 // is queue empty or full ?
 int isEmpty(Queue* q){
-	return (q->size == 0);
+	return (q->first == -1);
 }
 
 int isFull(Queue* q){
-	return (q->size == MAX_SIZE);
+	return (q->last == MAX_SIZE);
 }
 
 
 	
 // ret_arr is an empty array being passed in which will be filled
 //Function to remove an emnt from the queue (dequeue)
-char *  dequeue(Queue* q, char * ret){
+//ret is changed
+int dequeue(Queue* q, char** element){ // char* ret
 	if(isEmpty(q)){
 	    printf("queue is empty\n");
-	    return NULL; // null = error
+	    return 1; // null = error
 
 	}
-	char *element = q->arr[q->first];
+	*element =q->arr[q->first];
+	
 	if (q->first == q->last){
 	//one elmnt present
-	q->first = -1;
-	q->last = -1;
-
-
-	} else {q->first = (q->first+1) % MAX_SIZE;}
+		q->first = -1;
+		q->last = -1;
 	
-	ret = malloc(strlen(element));
-	for (int i = 0; i < strlen(element); i++){
-		ret[i] = element[i];
+	} else {
+		q->first = (q->first+1) % MAX_SIZE;
 	}
-		
 
-	
-	// 'return' the first element
-	// move everything up
-
-
+	return 0;
 }
 // enqueue arr
 // function to get element at the front of our queue
 
-int enqueue(Queue* q,char *element){
-    char *  item;
-if(isFull(q)){
-    printf("Queue is full\n");
-    	return 1;
-  }
-    if(isEmpty(q)){
-        q->first =0;
-    }
-    q->last = (q->last + 1 % MAX_SIZE);
-    q->arr[q->last] = item; ///store ptr directly
+void enqueue(Queue* q,char *element){
 
-    //can also use malloc toalloc memory and strcpy to copy string and free at end if this implmeentation doesnt work
-    
+//char * item;
+	if(isFull(q)){
+    	printf("Queue is full\n");
+    		return;
+  	}	
 
-    // add the arr to last open position
-
-    q->first++;
-	q->size++;
-	return 0;
+	if(isEmpty(q)){
+        	q->first =0;
+   	 }
+    	
+	q->last = (q->last+1) % MAX_SIZE;
+    //allocate mem for new item
+    q->arr[q->last] = (char *)malloc(strlen(element) + 1);
+        if(q->arr[q->last] == NULL){
+		printf("Mem alloc failed!\n");
+		exit(EXIT_FAILURE);
+		}
+		//copyitem into q using strcpy
+	strcpy(q->arr[q->last],element);
 }

@@ -8,6 +8,7 @@
 #include <math.h>
 #include "checksum.h"
 #include <pthread.h>
+#include "queue.h"
 	//KNOWN PINS
 	//Port 1 tx: 27
 	//Port 1 rx: 26
@@ -29,7 +30,7 @@ int bitCt = 0;
 int lastEdgeDir =-1; //no prev edge
 bool hasRisen = false;
 clock_t lastFallTime;
-
+bool queueLock = false;
 void* receiveHandshake(void* args);
 
 int send_info(int pi, int bit);
@@ -38,6 +39,9 @@ void asciiToBinary(char *text, char *binary);
 int send_mode();
 //void *send_mode(int pi);
 int pi;
+void qsend(Queue * q, char * binary);
+Queue q;
+
 
 int main(){
 
@@ -45,6 +49,9 @@ int main(){
 
 	pthread_t rec_thread;
 	pthread_create(&rec_thread, NULL,&receiveHandshake, NULL);
+	
+	pthread_t qsend_thread;
+	pthread_create(&qsend_thread, NULL, &qsend,NULL);
 
 	while(1){
 		send_mode(pi);
@@ -55,7 +62,9 @@ int main(){
 	//	printf("Receiving:\n");
 	//	receiveHandshake(pi); // wait until something has been sent --> switch back
 	}	
-
+	
+	init_queue(&q);
+	
 	/**
 	if (mode == SEND_MODE){
 		send_mode(pi);
@@ -111,6 +120,15 @@ int send_mode(){
 			send_info(pi,bit);
 
 		}
+
+
+	//	printf("%d",queueLock);
+		
+		queueLock = true;
+		enqueue(&q, binary);
+		
+		queueLock = false;
+		//printf("%d",queueLock);
 		//trailer bit
 		gpio_write(pi,27,0);
 		usleep(DELTA_T);
@@ -121,6 +139,27 @@ int send_mode(){
 	return 0;
 		//receiveHandshake(pi);
 
+}
+
+
+void qsend(Queue *q, char * binary){
+    //while true waiting for queueLock to become false
+    while(1){
+    //lock queue
+    
+    //dequeue
+    //unlock
+    //send message
+    if (queueLock == false){
+	queueLock = true;
+	dequeue(&q, binary);
+    	queueLock = false;
+    }
+
+
+
+
+	}
 }
 int send_info(int pi, int bit){	
 //printf("in send info\n");
