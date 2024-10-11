@@ -27,27 +27,36 @@ Queue;
 void init_queue(Queue* q);
 void enqueue(Queue* q, Packet* element);
 int dequeue(Queue* q, Packet** element);
+
 /**
 int main(){
 	
 	Queue q;
 
 	init_queue(&q);
-	enqueue(&q, "banana");
-	enqueue(&q, "apple");
-	enqueue(&q, "dog");
-	enqueue(&q, "cherry");
-	enqueue(&q, "mango");
+	Packet packet1;
+	packet1.sender_addy = 0b1111 & 0x0F;
+	packet1.receiver_addy= 0b00111 & 0x0F;
+	packet1.data = "apple";
+	enqueue(&q, &packet1);
+
+	Packet packet2;
+	packet2.sender_addy = 0b1111 & 0x0F;
+	packet2.receiver_addy= 0b00111 & 0x0F;
+	packet2.data = "banana";
+	enqueue(&q, &packet2);
 	
-	char *element;
+	
+	Packet *element;
 	int test = dequeue(&q, &element);
-	printf("Dequeue'd: %s\n",element);
+	printf("Dequeue'd: %s\n",element->data);
+	test = dequeue(&q, &element);
+	printf("Dequeue'd: %s\n",element->data);
 
 	return 0;	
 }
+
 */
-
-
 
 
 //create q
@@ -108,7 +117,7 @@ void enqueue(Queue* q,Packet *element){
     	
 	q->last = (q->last+1) % MAX_SIZE;
     //allocate mem for new item
-	size_t size = sizeof(uint8_t) *2  + strlen(element->data)
+	size_t size = sizeof(uint8_t) *2  + strlen(element->data);
     q->arr[q->last] = (Packet *)malloc(size + 1);
         if(q->arr[q->last] == NULL){
 		printf("Mem alloc failed!\n");
