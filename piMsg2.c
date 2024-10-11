@@ -20,50 +20,84 @@
 	//Port 4 rx: 20
 
 
-uint32_t startTick = 0;
-uint32_t STARTTEST = 0;
-int count = 0;
+
 #define DELTA_T 6000
 #define MAX_BITS 6400 // maximum number of bits we can record in a message
-char* bitBuffer;
-int bitCt = 0;
-int lastEdgeDir =-1; //no prev edge
-bool hasRisen = false;
-clock_t lastFallTime;
-bool queueLock = false;
-void* receiveHandshake(void* args);
+//ring topology: each Pi knows the IP address of next pi in the ring. Hardcode these
 
+//REMEMBER EACH PI ONLY GETS ON DEFINITION!!
+
+#define YOUR_PI_ADDRESS 0b1111 // 15  in decimal
+#define TARGET_PI_ADDRESS 0b0111//7 indecimal //address of pi you want to send msg to
+#define YOUR_PI_ADDRESS 0b0111 // 7 in decimal
+#define TARGET_PI_ADDRESS 0b0011// 3 in decimal
+#define YOUR_PI_ADDRESS 0b0011 // 3  in decimal
+#define TARGET_PI_ADDRESS 0b0111//15 in decimal
+
+#define PACKET_SIZE_BITS 8 //sz of packet header (send and receive addresses)
+// #define NEXT_PI_ADDRESS 1 //IP/addy of next pi in the ring
+
+
+
+int pi;                        
+uint32_t startTick = 0;   // starter tick for timing calculations
+int count = 0;      // count for bits received
+char* bitBuffer;   // buffer for received bits
+int bitCt = 0;     //bitCOUNT
+bool hasRisen = false;   // flag to show a rising edge has occurred
+clock_t lastFallTime;     //time of last falling edeg
+bool queueLock = false; //for queue (sending)
+void qsend(Queue * q, char * binary); //forqueue
+Queue q; //for queue
+//PROTOTYPEŠ
+void* receiveHandshake(void* args);
+void* send_mode(void* args);
+void send_binary_packets(int pi,char *binary_packet);
+char* packet_to_binary(Packet *packet);
+char binaryToASCII(char* binary);
 int send_info(int pi, int bit);
-char binaryToASCII(char*);
-void asciiToBinary(char *text, char *binary); 
-int send_mode();
-//void *send_mode(int pi);
-int pi;
-void qsend(Queue * q, char * binary);
-Queue q;
+void charToBinary(unsigned char decimal, char *eight); 
+Packet binary_to_packet(char *binary);
+void send_packet_forward(Packet *packet);
+bool withinBuffer(uint32_t tick, int edgeDirection);
+void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick);
+void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick);
+
+//packet structure
+typedef struct {
+	uint8_t sender_addy;
+	uint8_t receiver_addy;
+	char *data 
+
+} Packet;
+
+// sender and receiver address to 4 bits 0-15
 
 
 int main(){
 
 	pi = pigpio_start(NULL,NULL);
 
+	//set modes? 
+
 	pthread_t rec_thread;
 	pthread_create(&rec_thread, NULL,&receiveHandshake, NULL);
 	
-	pthread_t qsend_thread;
-	pthread_create(&qsend_thread, NULL, &qsend,NULL);
+	pthread_t send_thread;
+	pthread_create(&qsend_thread, NULL, &send_mode,NULL);
 
-	while(1){
-		send_mode(pi);
-	}
+
+	pthread_join(rec_thread, NULL);
+    pthread_join(send_thread, NULL);
+
 	
-	for(int i = 0; i <20; i++){
+	// for(int i = 0; i <20; i++){
 		//send_mode(pi);
 	//	printf("Receiving:\n");
 	//	receiveHandshake(pi); // wait until something has been sent --> switch back
-	}	
+	// }	
 	
-	init_queue(&q);
+	// init_queue(&q);
 	
 	/**
 	if (mode == SEND_MODE){
@@ -78,70 +112,149 @@ int main(){
 	return 0;
 }
 
-int send_mode(){
+void* send_mode(void* args){
+	/*
+	collects message and receiver address from user
+	creates packet contains sender receiver and msg data 
+	conver packet to binary string
+	send packets
+	binary to packet reconstructs msg from received bits--help handle messaging
+	*/
+
+	while(1){
 	printf("Sending:\n");
+/*
+[1,1,1,1] = 15 indecimal
+[0,1,1,1] = 7 decimal
+[0,0,1,1] = 3 dec
+*/
+		uint8_t sender_addy = YOUR_PI_ADDRESS;
+		uint8_t receiver_addy = TARGET_PI_ADDRESS;
 
-//	while(1){
-		
-		//read ASCII bits user sends (same size 101)
-	//	char text[400];
-		char * text = NULL;
-		char *binary;
-		int binaryLength;
+		char *txt = NULL;
+		// char *binary;
+		// int binaryLength;
+		sizet_t size =100;
     	printf("Enter a sentence (max 100 characters): ");
-    	//	scanf("%100[^\n]", text); //read any char except newline char [^\n], max100
-		//scanf("%100s[^\n]", text);
-			
+    	getline(&txt, &size, stdin);
 		
-	//	fgets(text, sizeof(text), stdin);
-		size_t size = 30;
-		ssize_t read = getline(&text, &size, stdin);
+		//remove new line from input
+		txt[strcspn(txt,"\n")] = '\0';
+
+		//create packets
+		Packet packet; 
+		packet.sender_addy = sender_addy & 0x0F;
+		packet.receiver_addy = receiver_addy & 0x0F; // & 0x0F to mask and ensure 4 bits (decimal:0-15)
+		packet.data = txt;
 		
-		usleep(sizeof(text)*DELTA_T);
+		//convert packet to a binary string
+		char *binary_packet = packet_to_binary(&packet);
+		
+		//sendbinary packet
+		send_binary_packets(pi,binary_packet);
+		
+		free(binary_packet);
+		free(txt);	
+		usleep(100000);
+		}
+		pthread_exit(NULL);
+		
+	}
 
-		//fclose(stdin);
-		binaryLength = strlen(text) * 16; //16 bit ASCII chars
-		binary =  calloc(binaryLength + 1, sizeof(char)); //+1 for null ptr
+		//scanf("%100s[^\n]", text);	
+					//	fgets(text, sizeof(text), stdin);
+// 		size_t size = 30;
+// 		ssize_t read = getline(&text, &size, stdin);
+		
+// 		usleep(sizeof(text)*DELTA_T);
 
-		if (binary == NULL) {
-			fprintf(stderr, "Memory alloc failed\n");
+// 		//fclose(stdin);
+// 		binaryLength = strlen(text) * 16; //16 bit ASCII chars
+// 		binary =  calloc(binaryLength + 1, sizeof(char)); //+1 for null ptr
+
+// 		if (binary == NULL) {
+// 			fprintf(stderr, "Memory alloc failed\n");
+// 			exit(1);
+
+// 		}
+// 		asciiToBinary(text, binary);
+// 		//printf(text);
+// 		//send header bit
+// 		gpio_write(pi,27,1);
+// 		usleep(DELTA_T);
+// 		//send read binary data
+// 		for (int i =0; binary[i]!= '\0';i++){
+// //			printf("%c\n",binary[i]);
+// 			int bit = binary[i] - '0';
+// 			send_info(pi,bit);
+
+// 		}
+
+
+// 	//	printf("%d",queueLock);
+		
+// 		queueLock = true;
+// 		enqueue(&q, binary);
+		
+// 		queueLock = false;
+// 		//printf("%d",queueLock);
+// 		//trailer bit
+// 		gpio_write(pi,27,0);
+// 		usleep(DELTA_T);
+// 		free(binary);
+// 		free(text);
+// //}
+// 	//fclose(stdin);	
+// 	return 0;
+// 		//receiveHandshake(pi);
+
+		
+		
+char* packet_to_binary(Packet *packet){
+	//convert 4 bit addresses into binary strings
+	//convert msg data to binary and sppend to packet
+
+	size_t lenData = strlen(packet->data)*16;
+	size_t lenTotal = 8 + lenData;
+
+	char *binary = calloc(PACKET_SIZE_BITS + 1, sizeof(char)); //np = +1
+	if (binary==NULL){
+		fprintf(stderr,"Mem alloc fail\n");
+			exit(1);
+			}
+		//sender and receeive addys--> binary
+		for(int i=3; i>=0;--i){
+			binary[3-i] = ((packet->sender_addy >> i)&1) +'0';
+			binary[7-i] = ((packet->receiver_addy >> i)&1) +'0';
+			}
+		//data to binary + append
+		char *data_binary = calloc(strlen(packet->data)*16+1,sizeof(char));
+		if(data_binary == NULL){
+			fprintf(stderr,"Mem alloc failed\n");
 			exit(1);
 
 		}
-		asciiToBinary(text, binary);
-		//printf(text);
-		//send header bit
-		gpio_write(pi,27,1);
-		usleep(DELTA_T);
-		//send read binary data
-		for (int i =0; binary[i]!= '\0';i++){
-//			printf("%c\n",binary[i]);
-			int bit = binary[i] - '0';
-			send_info(pi,bit);
+		asciiToBinary(packet->data,data_binary);
+		strcat(binary,data_binary);
+
+		free(data_binary);
+		return binary;
 
 		}
-
-
-	//	printf("%d",queueLock);
-		
-		queueLock = true;
-		enqueue(&q, binary);
-		
-		queueLock = false;
-		//printf("%d",queueLock);
-		//trailer bit
+void send_binary_packets(int pi,char *binary_packet){
+		//send header!
+		gpio_write(pi,27,1);
+		usleep(DELTA_T);
+		//send bit data
+		for (int i = 0; binary_packet[i] != '\0';i++){
+			int bit = binary_packet[i] - '0';
+			send_info(pi,bit);
+		}
 		gpio_write(pi,27,0);
 		usleep(DELTA_T);
-		free(binary);
-		free(text);
-//}
-	//fclose(stdin);	
-	return 0;
-		//receiveHandshake(pi);
-
-}
-
-
+		//send trailerrrrr bit! 
+		}																											//	scanf("%100[^\n]", text); //read any char except newline char [^\n], max100
+					
 void qsend(Queue *q, char * binary){
     //while true waiting for queueLock to become false
     while(1){
@@ -180,44 +293,28 @@ int send_info(int pi, int bit){
 
 }
 char binaryToASCII(char *binary){
-//	printf("Binary to ascii running\n");
-	double decimal = 0.0;
+
 	// take our 16 bits, convert to 8 bits using decode
- 	
 	int * return_arr = malloc(sizeof(int)*8);
 	int* param_arr = malloc(sizeof(int)*16); //empty array to be filled
 	for (int i = 0; i <16; i++){
-		param_arr[i] = (int) binary[i];
-		
-	}
+		param_arr[i] = binary[i] - '0'; // Convert '0'/'1' to 0/1
+	}	
 
 	ec_decode(param_arr, return_arr);
 	// possibly need to change return_arr to char
-
+	int decimal = 0;
 	// takes 8 bits, converts to decimal
-	for (int i=7; i >=0 ;i--){
+	for (int i=0; i < 8; i++){
 		//printf("%d,", binary[i]);
-		double base = 2.0;
-		double exp = 7-i;	
-		decimal += return_arr[i] * (pow(base,exp)); // TODO: switch to return_arr[i]
-		
-		//asciiChar <<= 1;
-		//if(binary[i] == '1'){
-		//	asciiChar |= 1; //inclusiv OR 
+		decimal = (decimal << 1) | return_arr[i];
 
+	}
+	free(return_arr);
+	free(param_arr);
 
-		}
-//	printf("  ");	
-	//printf("%f\n", decimal);	
-	char asciiChar = (int) decimal;
-
-	
-	return asciiChar; 
-
-
-	
+	return (char)decimal;
 }
-//convert single character uinto its 8bit binary representation
 void charToBinary(unsigned char decimal, char *eight) { //char =ascii char, eight==char arr for binary string to be stored (9 long to hold 8 bit and terminator)
   //  printf("in char to bin\n");
 	
@@ -301,55 +398,25 @@ void asciiToBinary(char *text, char *binary) { //exclude spaces (line25)
    // printf("After free eight");
 }
 bool withinBuffer(uint32_t tick, int edgeDirection){
-	
-//	printf("%d", edgeDirection);
-	// set buffer of 5000
-    int buff = 5000;
-    uint32_t correctTick = startTick + (2 * DELTA_T);
-   int diff = correctTick - tick;
+/*
+making correction: edgeDirection stores bits as integers and later tries to use
+them as characters in functions like binaryToAscii
+Instead:store bits as characters 0,1 in BitBuffer!
+*/
+	//variables
+    int buff = 5000; 	// set buffer of 5000
+	uint32_t correctTick = startTick + (2 * DELTA_T);
+	int diff = correctTick - tick;
+
 	//printf("correctTick: %u, tick: %u, diff: %d\n", correctTick, tick, diff);
 
     if((tick < (correctTick + buff)) && (tick > (correctTick - buff))){
-	
-//	printf("Within buffer\n");
-       // printf("Within range: %d\n", edgeDirection);
-		//printf("Tick within range. \n");
-
-        startTick = tick;
-		// return true;
-
-            //store bits in bitBuffer
-	bitBuffer[bitCt++] = edgeDirection;
-            // check to see if we have received 8 bits ( each char 8 bits)
-            if (bitCt % 16 == 0){ //TODO change back to 16 instead of 8, as well as the next 4 lines
-		    //printf("Byte sent\n");
-		
-			
-
-                char byteStr[16];
-                for(int i = 0; i < 16; i++){
-                    byteStr[i] = bitBuffer[bitCt - 16+i];
-		//  	printf("%d,", byteStr[i]); 
-                }
-	//	printf("  ");
-
-
-                byteStr[16] = '\0';
-                char asciiChar = binaryToASCII(byteStr); //converts bites receeived to ASCII chars
-
-               	printf("%c", asciiChar); //TODO put this back in!
-                fflush(stdout); 
-            }
-	    else{
-	    }
-
-
-        return true;
-    } else {
-        return false;
-    }
+		startTick = tick;
+		bitBuffer[bitCt++] = edgeDirection + '0'; //conmvert to '0'or'1'
+		return true;}else{
+			return false;
+		}
 }
-
 void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
 	//printf("Down - tick: %u\n", (tick-STARTTEST));
 	//printf("Down\n");
@@ -398,10 +465,16 @@ void* receiveHandshake(void* args){
 	callback(pi,20,RISING_EDGE,risingFunc);
 	
 	bitBuffer = malloc(MAX_BITS);
+	if (bitBuffer == NULL){
+		fprintf(stderr,"memalloc failed\n")
+		exit(1);
+	}
+	bitCt = 0;
 	//usleep(5000000);
 	//return 0;
 	while(1){
-	//	usleep(1000);
+		usleep(1000);
+
 		clock_t current = clock();
 		int diff = current - (int) lastFallTime;	
 		if ((lastFallTime != 0) && (diff > 40*DELTA_T)){
@@ -409,15 +482,91 @@ void* receiveHandshake(void* args){
 			lastFallTime = 0;
 			hasRisen = false;
 			count = 0;
-			free(bitBuffer);
-			bitBuffer = malloc(MAX_BITS);
+			//free(bitBuffer);
+			bitBuffer[bitCt] = '\0'// malloc(MAX_BITS);
 		//	pthread_exit(NULL);
-			printf("\n");
+			Packet packet = binary_to_packet(bitBuffer)
 
-		//	return 0;
-		}	
-			
+			if(packet.data != NULL){
+				if (packet.receiver_addy == YOUR_PI_ADDRESS){
+					printf("Received msg from %d: %s\n",packet.sender_addy,packet.data);
+				
+				} else {
+					send_packet_forward(&packet);
+
+				}
+				free(packet.data);
+
+			} else {
+				fprintf(stderr,"Failed to parse packets\n");
+
+			}
+		//reset bitBuffer for next msg
+		free(bitBuffer);
+		bitBuffer = malloc(MAX_BITS);
+		if(bitBuffer == NULL){
+			//print error msg agai!
+			fprintf(stderr,"Mem alloc failed\n");
+			exit(1);
+		}
+		bitCt = 0;
+		}
 	}
-//	return 0;
+	pthread_exit(NULL);
+}
 
+Packet binary_to_packet(char *binary){
+	Packet packet;
+	char addy_str[5] = {0}; //4bits and null terminator
+	//acquire snder addy
+	strncpy(addy_str,binary,4);
+	packet.sender_addy = strtol(addy_str,NULL,2);
+
+	//get receiver addy
+	strncpy(addy_str,binary+4,4);
+	packet.receiver_addy = strtol(addy_str,NULL,2);
+
+	//get data
+	char *data_binary =binary + 8; //skip first 8 bits (address)
+	//get length ofdqta
+	size_t data_length = strlen(data_binary);
+    if (data_length % 16 != 0){
+		fprintf(stderr,"Invalid binary length(not16!)\n")
+		packet.data = NULL;
+		return packet;
+	} //else
+	size_t num_chars = data_length / 16; // each char is 16 bits (8data8parit)
+
+	//alloc memory for the msg
+	packet.data = calloc(num_chars + 1 , sizeof(char));
+	if(packet.data==NULL){
+		fprintf(stderr,"Allocation of Memory failed");
+		exit(1);
+
+	}
+	char byteStr[17];//17for nullterm
+	byteStr[16] = '\0';//terminate the string
+
+	for (size_t i = 0;i< num_chars;i++){
+
+		//process 2 bytes for one char
+		strncpy(byteStr,data_binary+ (i*16),16);
+		//use binaryToAscii to convert bits to chars
+		char asciiChar = binaryToASCII(byteStr);
+		//store char in msg data
+		packet.data[i] = asciiChar;
+
+
+	}
+	packet.data[num_chars] = '\0'; // null term i nate the str i ng
+
+	return packet;
+}
+void send_packet_forward(Packet *packet){
+	//covert packet back to binary
+	char *binary_paclet = packet_to_binary(packet);
+	//send to next pi in ring
+	send_binary_packets(pi,binary_packet);
+	//cleanup
+	free(binary_packet);
 }
