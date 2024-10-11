@@ -44,12 +44,12 @@
 // #define NEXT_PI_ADDRESS 1 //IP/addy of next pi in the ring
 
 
-typedef struct {
-	uint8_t sender_addy;
-	uint8_t receiver_addy;
-	char *data; 
+//typedef struct {
+//	uint8_t sender_addy;
+//	uint8_t receiver_addy;
+//	char *data; 
 
-} Packet;
+//} Packet;
 
 int pi;                        
 uint32_t startTick = 0;   // starter tick for timing calculations
@@ -59,7 +59,7 @@ int bitCt = 0;     //bitCOUNT
 bool hasRisen = false;   // flag to show a rising edge has occurred
 clock_t lastFallTime;     //time of last falling edeg
 bool queueLock = false; //for queue (sending)
-void qsend(void *args); //forqueue
+void* qsend(void *args); //forqueue
 Queue q; //for queue
 //PROTOTYPEŠ
 void* receiveHandshake(void* args);
@@ -83,7 +83,6 @@ void risingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick);
 
 int main(){
 
-	char *text = NULL;
 	pi = pigpio_start(NULL, NULL);
 	init_queue(&q);
 
@@ -113,16 +112,15 @@ while(1){
 		txt[strcspn(txt,"\n")] = '\0';
 
 		//create packets
-		Packet packet; 
+		Packet* packet = NULL; 
 		// [1,1,1,1]
-		packet.sender_addy = sender_addy & 0x0F;
-		packet.receiver_addy = receiver_addy & 0x0F; // & 0x0F to mask and ensure 4 bits (decimal:0-15) [1,1,1,1]
-		packet.data = txt;
+		packet ->sender_addy = sender_addy & 0x0F;
+		packet ->receiver_addy = receiver_addy & 0x0F; // & 0x0F to mask and ensure 4 bits (decimal:0-15) [1,1,1,1]
+		packet ->data = txt;
 		
 		//queue packets
-		enqueue(&q, &packet);
+		enqueue(&q, packet);
 
-		free(binary_packet);
 		free(txt);	
 		usleep(100000);
 }
@@ -153,7 +151,7 @@ void* qsend(void* args){
 			usleep(DELTA_T);
 			continue;
 		}
-		binaryLength = (sizeof(uint8_t)*8)+((text->data) * 16); // each char is 16-bit binary
+		binaryLength = (sizeof(uint8_t)*8)+(strlen(text->data) * 16); // each char is 16-bit binary
 		binary = calloc(binaryLength + 1, sizeof(char));
 
 		if (binary == NULL)
@@ -162,13 +160,15 @@ void* qsend(void* args){
 			exit(1);
 		}
 		
-		char *binary_packet = packet_to_binary(&packet);
+		char *binary_packet = packet_to_binary(text);
 
 		//printf("Sending data now\n");	
 		send_binary_packets(pi,binary_packet);
 		
 		free(binary);
 		free(text);
+		free(binary_packet);
+
 		//usleep(2000); //TODO changes
 		//printf("Sending done\n");
 		}
@@ -213,7 +213,7 @@ main takes them out of queue puts into binary and sends that
 
 	// 	char *txt = NULL;
 	// 	size_t size =100;
-	// 	printf("What computer do you want to send to? 15, 7, 3: ");\
+	// 	printf("What computer do you want to send to? 15, 7, 3: ")
 	// 	scanf("%hhu",&receiver_addy);
 	// 	getline(&txt,&size,stdin);
 
