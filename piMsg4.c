@@ -135,8 +135,9 @@ while(1){
 	//	printf("%d",packet->sender_addy);	
 		//queue packets
 		enqueue(&q, packet);
+		printf("%d", q.size);
 	//	printf("%d",q.size);
-//		free(packet);
+		free(packet);
 		free(txt);
 	//	free()	
 		usleep(100000);
@@ -177,17 +178,18 @@ void* qsend(void* args){
 		{
 
 			fprintf(stderr, "Failed to change packet to binary\n");
-			free(packet->data);
+			
 			free(packet);
+			free(packet->data);
 			continue;
 		}
 		
 		//printf("Sending data now\n");	
 		send_binary_packets(pi,binary_packet);
 		
-	
-		free(packet->data);
+			
 		free(packet);
+	//	free(packet->data);
 		free(binary_packet);
 	
 		//usleep(2000); //TODO changes
@@ -264,7 +266,7 @@ main takes them out of queue puts into binary and sends that
 char* packet_to_binary(Packet *packet){
 	//convert 4 bit addresses into binary strings
 	//convert msg data to binary and sppend to packet
-
+	//size_t lenData = malloc(sizeof(size_t)*16);
 	size_t lenData = strlen(packet->data)*16;
 	size_t lenTotal = 8 + lenData;
 
