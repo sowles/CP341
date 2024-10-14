@@ -106,7 +106,7 @@ while(1){
 
 		char *txt = NULL;
 		size_t size =0; // init size to 0 not 100 change
-		printf("What computer do you want to send to? 15, 7, 3: ");\
+		printf("What computer do you want to send to? 15, 7, 3: ");
 		scanf("%hhu",&receiver_addy);
 		
 		//clear out input 
@@ -146,6 +146,7 @@ while(1){
 	//	printf("%d",packet->sender_addy);	
 		//queue packets
 		enqueue(&q, packet);
+		//printf("Enqueued\n");
 
 		free(packet->data);
 		free(packet);
@@ -178,7 +179,9 @@ void* qsend(void* args){
 		{
 			// waits until q is unlocked to do this. 
 			dequeue(&q, &packet);
-		//	printf("dequeued: %s\n", packet->data);
+			//printf("dequeued: %s\n", packet->data);
+	//		usleep(DELTA_T*4000); // works but terribly slow 0 chars took 5 sec, 10 chars took 7 sec, 20 took 8.8, 30 took 11 
+			usleep(5000000+sizeof(packet->data)*200000 + 100000);  // 5 seconds to send 0 chars, 200_000 microseconds for each char afterwards
 			
 			
 		}
@@ -217,7 +220,7 @@ void* qsend(void* args){
 		//printf("Sending data now\n");	
 		
 		send_binary_packets(pi,binary_packet);
-		
+		printf("Message sent\n");	
 		free(packet->data);	
 		free(packet);
 	//	free(packet->data); //TODO might be necessary?
@@ -232,95 +235,29 @@ void* qsend(void* args){
 	
 }
 		
-	
-/*
-Merge goal: 
-Collects user input (receiver address and message).
-Converts the message to binary.
-Sends the binary data over GPIO.
-Optionally, handles the queue if necessary.
-
-Queue packets
-
-
-
-Store strings as packets and send packets in queuue order: 
-send mode stre strings as packets and put them into the queue
-main takes them out of queue puts into binary and sends that 
-
-*/
-
-
-	/*
-	collects message and receiver address from user
-	creates packet contains sender receiver and msg data 
-	conver packet to binary string
-	send packets
-	binary to packet reconstructs msg from received bits--help handle messaging
-	*/
-
-	// while(1){
-	// printf("Sending:\n");
-
-	// 	uint8_t sender_addy = YOUR_PI_ADDRESS;
-	// 	uint8_t receiver_addy;
-
-	// 	char *txt = NULL;
-	// 	size_t size =100;
-	// 	printf("What computer do you want to send to? 15, 7, 3: ")
-	// 	scanf("%hhu",&receiver_addy);
-	// 	getline(&txt,&size,stdin);
-
-
-    // 		printf("Enter a sentence (max 100 characters): ");
-    // 		getline(&txt, &size, stdin);
-		
-	// 	//remove new line from input
-	// 	txt[strcspn(txt,"\n")] = '\0';
-
-	// 	//create packets
-	// 	Packet packet; 
-	// 	// [1,1,1,1]
-	// 	packet.sender_addy = sender_addy & 0x0F;
-	// 	packet.receiver_addy = receiver_addy & 0x0F; // & 0x0F to mask and ensure 4 bits (decimal:0-15) [1,1,1,1]
-	// 	packet.data = txt;
-		
-	// 	//queue packets
-	// 	enqueue(&q, &packet);
-
-
-		//dequeue?
-
-
-		
-		
-char * packet_to_binary(Packet *packet){
-	//check if packet oir packet data is NLUL
-	if (packet ==NULL || packet->data == NULL){
-	    fprintf(stderr,"Invalid packet or packet data\n");
-	    return NULL;
+char* packet_to_binary(Packet* packet){
+	if (packet == NULL || packet->data == NULL){
+		fprintf(stderr, "Invalid packet or packet data");
+		return NULL;
 	}
-
-	//convert 4 bit addresses into binary strings
-	//convert msg data to binary and sppend to packet
 	//size_t lenData = malloc(sizeof(size_t)*16);
 	size_t lenData = strlen(packet->data)*16;
-	size_t lenTotal = sizeof(uint8_t)*2 + lenData; 
-//	printf("calloc'd: %ld\n",lenTotal+1);
-	char *binary = calloc(lenTotal + 1,sizeof(char));//null pointer + 1
+	size_t lenTotal = sizeof(uint8_t)*2 + lenData; // +5 to fix a leak 
+	char *binary = calloc(lenTotal + 7,sizeof(char));//null pointer + 1
+//	char* binary = calloc(1000, sizeof(char));
 	if (binary==NULL){
 		fprintf(stderr,"Mem alloc fail\n");
 			exit(1);
 			}
 		//sender and receeive addys--> binary
 		for(int i=3; i>=0;--i){
-			binary[3-i] = ((packet->sender_addy >> i)&1) +'0'; //TODO possibly need to type cast this somehow?
+			binary[3-i] = ((packet->sender_addy >> i)&1) +'0'; 
  			binary[7-i] = ((packet->receiver_addy >> i)&1) +'0';
 			}
 		//adding to null term string
 		binary[8] = '\0';
 		//data to binary + append
-		char *data_binary = malloc(lenData+1*sizeof(char));
+		char *data_binary = malloc(lenData+1*sizeof(char)); 
 		if (lenData > 0){
 		    if(data_binary == NULL){
 			fprintf(stderr,"Mem alloc failed\n");
@@ -331,18 +268,13 @@ char * packet_to_binary(Packet *packet){
 
 //		printf("dequeued: %s\n", packet->data);
 		asciiToBinary(packet->data,data_binary);
-		
-		//printf("data_binary: %s\n", data_binary);
-		//printf("Two tests: %s\n%s\n", packet->data, data_binary);
-		strcat(binary,data_binary);
-//		printf("Two tests: %s\n%s\n", packet->data, data_binary);
-		//free(binary);
-		//free(data_binary);
+		strcat(binary,data_binary); //TODO problem here
 		}
 		return binary;
-//		free(binary);
-		}
+		//free(binary);
+	}
 void send_binary_packets(int pi,char *binary_packet){
+		//printf("sending packet: %s\n", binary_packet);
 		//send header!
 		gpio_write(pi,27,1);
 		usleep(DELTA_T);
@@ -454,7 +386,7 @@ void asciiToBinary(char *text, char *binary) {
 		return;
 	}
 	binary[0] = '\0';
-	char *eight = calloc(8,sizeof(char)); //alloc 17-bit mem to represent each character sent
+	char *eight = calloc(17,sizeof(char)); //alloc 17-bit mem to represent each character sent
    	 if (eight == NULL){
 	    exit(1);
     	}
@@ -487,8 +419,9 @@ Instead:store bits as characters 0,1 in BitBuffer!
     if((tick < (correctTick + buff)) && (tick > (correctTick - buff))){
 		startTick = tick;
 		bitBuffer[bitCt++] = edgeDirection + '0'; //conmvert to '0'or'1'
-		return true;}else{
-			return false;
+		return true;}
+    else{
+		return false;
 		}
 }
 void fallingFunc(int pi, unsigned user_gpio, unsigned level, uint32_t tick){
@@ -619,7 +552,6 @@ Packet binary_to_packet(char *binary){ //TODO returning packet may be dicey, ask
 
 	}
 	packet.data[num_chars] = '\0'; // null term i nate the str i ng
-
 	return packet;
 }
 void send_packet_forward(Packet *packet){
@@ -628,7 +560,7 @@ void send_packet_forward(Packet *packet){
 	    return;
 	
 	}
-
+	// TODO possibly enqueue this message instead of calling from here
 	//covert packet back to binary
 	char* binary_packet = packet_to_binary(packet);
 	//send to next pi in ring
