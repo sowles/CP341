@@ -555,16 +555,18 @@ Packet binary_to_packet(char *binary){ //TODO returning packet may be dicey, ask
 	return packet;
 }
 void send_packet_forward(Packet *packet){
+//	printf("forwarding, %s\n", packet->data);
 	if(packet->sender_addy == YOUR_PI_ADDRESS){
-	    printf("checked that packet returned to sender");\
+//	    printf("checked that packet returned to sender");
 	    return;
 	
 	}
+	enqueue(&q, packet);
 	// TODO possibly enqueue this message instead of calling from here
 	//covert packet back to binary
-	char* binary_packet = packet_to_binary(packet);
+//	char* binary_packet = packet_to_binary(packet);
 	//send to next pi in ring
-	send_binary_packets(pi,binary_packet);
+//	send_binary_packets(pi,binary_packet);
 	//cleanup
-	free(binary_packet);
+//	free(binary_packet);
 }
